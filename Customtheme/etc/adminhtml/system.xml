@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Config:etc/system_file.xsd">
+    <system>
+        <tab id="customtheme" translate="label" sortOrder="10">
+            <label>Custom Theme</label>
+        </tab>
+        <section id="mycolorpicker" translate="label" type="text" sortOrder="300" showInDefault="1" showInWebsite="1" showInStore="1">
+            <label>My Color Picker Demo</label>
+            <!-- Assign section to tab -->
+            <tab>customtheme</tab>
+            <resource>Brainvire_Customtheme::custom_theme_settings</resource>
+            <!-- create group for fields in section -->
+           <group id="parameter" translate="label" type="text" sortOrder="1" showInDefault="1" showInWebsite="1" showInStore="1">
+ 
+                <label>Colorpicker Settings</label>
+                <field id="wall_color" translate="label comment"  sortOrder="116" type="text" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Wall Color</label>
+                    <frontend_model>Brainvire\Customtheme\Block\ColorPicker</frontend_model>
+                </field>
+            </group>
+        </section>
+    </system>
+</config>
