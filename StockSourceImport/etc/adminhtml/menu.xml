@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * Copyright © Magento, Inc. All rights reserved.
+ * See COPYING.txt for license details.
+ */
+-->
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Backend:etc/menu.xsd">
+    <menu>
+        <add id="Brainvire_StockSourceImport::stock_source_import" title="StockSourceImport" translate="title" module="Brainvire_StockSourceImport" sortOrder="50"  resource="Magento_Backend::content"/>
+        <add id="Brainvire_StockSourceImport::source_import" title="StockSourceImport" translate="title" module="Brainvire_StockSourceImport" sortOrder="60" parent="Brainvire_StockSourceImport::stock_source_import" action="stocksourceimport/import/index" resource="Brainvire_StockSourceImport::source_import"/>
+        <add id="Brainvire_StockSourceImport::source_import_log" title="StockSourceImport Log" translate="title" module="Brainvire_StockSourceImport" sortOrder="60" parent="Brainvire_StockSourceImport::stock_source_import" action="sourceimportlog/log/index" resource="Brainvire_StockSourceImport::source_import_log"/>
+    </menu>
+</config>
