@@ -1,0 +1,27 @@
+<?php
+/**
+ * Copyright © Magento, Inc. All rights reserved.
+ * See COPYING.txt for license details.
+ */
+
+// @codingStandardsIgnoreFile
+
+/** @var \Brainvire\StorePickupMethod\Block\Order $block */
+?>
+<?php
+$_order = $block->getOrder();
+$quoteObject = $block->getQuote();  
+$quote = $quoteObject->get($_order->getQuoteId());
+$shippingMethod = $quote->getShippingAddress()->getShippingMethod();
+$storeAddress = $quote->getStoreAddress();
+if(isset($storeAddress)){
+?>
+	<div class="box box-order-store-address-address">
+		<strong class="box-title">
+			<span><?= /* @escapeNotVerified */ __('Store Address Info') ?></span>
+		</strong>
+		<div class="box-content">
+			<address><?php echo $storeAddress; ?></address>
+		</div>
+	</div>
+<?php } ?>

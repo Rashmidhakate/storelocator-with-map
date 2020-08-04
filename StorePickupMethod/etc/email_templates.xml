@@ -1,0 +1,4 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Email:etc/email_templates.xsd">
+    <template id="storepickup_general_template" label="Store Details Email Template" file="store_details_template.html" type="html" module="Brainvire_StorePickupMethod" area="frontend"/>
+</config>
