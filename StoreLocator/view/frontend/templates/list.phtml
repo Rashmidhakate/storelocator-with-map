@@ -1,0 +1,483 @@
+<?php
+
+/**
+ * @var \Brainvire\StoreLocator\Block\StoresList $block
+ * @codingStandardsIgnoreFile
+ */
+
+use \Brainvire\StoreLocator\Model\Config\Source\GroupBy;
+$googleApiKey = $block->getGoogleApiKey();
+?>
+<?php if($googleApiKey === null): ?>
+<p class="message-error error message">
+    <span><?php echo __('Google Api Key is not set!'); ?></span>
+</p>
+<?php else: ?>
+<div class="store-locator-module">
+    <div ng-app="brainvireMapsApp">
+        <div ng-controller="mapController" ng-init="init()">
+            <div class="store-locator-navigation">
+                <input type="text" ng-model="search" placeholder="<?php echo __('Search'); ?>" ng-keypress="searchKeyPress($event)" ng-change="searchChange()">
+                <p class="store-error" ng-show="noResults">
+                    <?php echo __('No results found'); ?>
+                </p>
+                <div class="store-locator-results">
+                    <?php switch($block->getGroupStoresBy()):
+                            case GroupBy::COUNTRY:
+                        ?>
+                            <div ng-repeat="(countryCode, countryData) in storesGrouped">
+                                <div class="country" ng-show="countryData.count > 0">
+                                    <h3 class="store-locator-group-heading">{{countryData.name}}</h3>
+                                    <div ng-repeat="(index, storeId) in countryData.stores">
+                                        <store store="helper.markers[storeId]" center-on-marker="centerOnMarker" langs="helper.langs" ng-hide="!helper.markers[storeId].visible"></store>
+                                    </div>
+                                </div>
+                            </div>
+                        <?php break; ?>
+                        <?php
+                            case GroupBy::CATEGORY:
+                        ?>
+                            <div ng-repeat="(categoryId, categoryData) in storesGrouped">
+                                <div class="category" ng-show="categoryData.count > 0">
+                                    <h3 class="store-locator-group-heading">{{categoryData.name}}</h3>
+                                    <div ng-repeat="(index, storeId) in categoryData.stores">
+                                        <store store="helper.markers[storeId]" center-on-marker="centerOnMarker" langs="helper.langs" ng-hide="!helper.markers[storeId].visible"></store>
+                                    </div>
+                                </div>
+                            </div>
+                        <?php break; ?>
+                        <?php
+                            case GroupBy::COUNTRY_CATEGORY:
+                        ?>
+                            <div ng-repeat="(countryCode, countryData) in storesGrouped">
+                                <div class="country" ng-show="countryData.count > 0">
+                                    <h3 class="store-locator-group-heading store-locator-group-heading--large">{{countryData.name}}</h3>
+                                    <div ng-repeat="(categoryId, categoryData) in countryData.elements">
+                                        <div class="category" ng-show="categoryData.count > 0">
+                                            <h4 class="store-locator-group-heading">{{categoryData.name}}</h4>
+                                            <div ng-repeat="(index, storeId) in categoryData.stores">
+                                                <store store="helper.markers[storeId]" center-on-marker="centerOnMarker" langs="helper.langs" ng-hide="!helper.markers[storeId].visible"></store>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        <?php break; ?>
+                        <?php
+                            case GroupBy::CATEGORY_COUNTRY:
+                        ?>
+                            <div ng-repeat="(categoryId, categoryData) in storesGrouped">
+                                <div class="category" ng-show="categoryData.count > 0">
+                                    <h3 class="store-locator-group-heading store-locator-group-heading--large">{{categoryData.name}}</h3>
+                                    <div ng-repeat="(countryCode, countryData) in categoryData.elements">
+                                        <div class="country" ng-show="countryData.count > 0">
+                                            <h4 class="store-locator-group-heading">{{countryData.name}}</h4>
+                                            <div ng-repeat="(index, storeId) in countryData.stores">
+                                                <store store="helper.markers[storeId]" center-on-marker="centerOnMarker" langs="helper.langs" ng-hide="!helper.markers[storeId].visible"></store>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        <?php break; ?>
+                        <?php
+                            case GroupBy::DONT_GROUP:
+                            default:
+                        ?>
+                            <div ng-repeat="(key, store) in helper.markers">
+                                <store store="store" center-on-marker="centerOnMarker" langs="helper.langs" ng-hide="!store.visible"></store>
+                            </div>
+                        <?php break; ?>
+                    <?php endswitch; ?>
+                </div>
+            </div>
+            <div id="map-container" class="store-locator-map"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    var mapModule = angular.module('brainvireMapsApp', []);
+    var stores = angular.fromJson('<?php echo $block->getStoresJson(); ?>');
+    var categories = angular.fromJson('<?php echo $block->getCategoriesJson(); ?>');
+
+    mapModule.factory('helper', function()
+    {
+        return {
+            markers: {},
+            categories: categories,
+            basePosition : {
+                center: {
+                    lat: 26,
+                    lng: 0
+                },
+                zoom: 2
+            },
+            langs: {
+                tel: '<?php echo __('Tel'); ?>',
+                fax: '<?php echo __('Fax'); ?>'
+            }
+        }
+    });
+
+    mapModule.controller('mapController', function($scope, $http, $timeout, helper)
+    {
+        var searchTimeout;
+
+        $scope.helper = helper;
+        $scope.storesGrouped = {};
+
+        $scope.noResults = false;
+        $scope.allAdded = true;
+
+        $scope.search = '';
+        $scope.infoWindow = false;
+
+        $scope.init = function()
+        {
+            var currentCategory;
+
+            $scope.map = new google.maps.Map(document.getElementById('map-container'), $scope.helper.basePosition);
+            $scope.markerClusterer = new MarkerClusterer($scope.map, []);
+
+            $scope.storesGrouped = angular.fromJson('<?php echo $block->getStoresGroupedJson(); ?>');
+
+            if(stores.length > 0)
+            {
+                angular.forEach(stores, function(store)
+                {
+                    currentCategory = $scope.helper.categories[store.category_id];
+
+                    var opts = {
+                        position: {
+                            lat: parseFloat(store.lat),
+                            lng: parseFloat(store.lng)
+                        },
+                        map: $scope.map,
+                        zoom: store.zoom,
+                        id: store.store_id,
+                        name: store.name,
+                        country: store.country,
+                        country_code: store.country_code,
+                        address: store.address,
+                        city: store.city,
+                        postcode: store.postcode,
+                        website: store.website,
+                        phone: store.phone,
+                        fax: store.fax,
+                        email: store.email,
+                        category_id: store.category_id,
+                        visible: true
+                    };
+
+                    if(currentCategory.icon !== '')
+                    {
+                        opts.icon = {
+                            url: currentCategory.icon
+                        }
+                    }
+
+                    $scope.newMarker(opts);
+                });
+            }
+        };
+
+        $scope._on = function(opts)
+        {
+            var self = this;
+
+            google.maps.event.addListener(opts.obj, opts.event, function(e)
+            {
+                opts.callback.call(self, e);
+            });
+        };
+
+        $scope.newMarker = function(opts)
+        {
+            var marker = new google.maps.Marker(opts);
+
+            $scope._on({
+                obj: marker,
+                event: 'click',
+                callback: function()
+                {
+                    var content =
+                        '<div class="store-locator-popup">' +
+                        '<h4 class="result-name">' + marker.name + '</h4>' +
+                        '<p class="result-address">';
+
+                    if(marker.address !== null && marker.address !== '')
+                    {
+                        content += marker.address + '<br />';
+                    }
+                    if(marker.city !== null && marker.city !== '')
+                    {
+                        content += marker.city + ', ';
+                    }
+                    content += marker.country;
+                    if(marker.postcode !== null && marker.postcode !== '')
+                    {
+                        content += ' ' + marker.postcode;
+                    }
+
+                    if(marker.phone !== null && marker.phone !== '')
+                    {
+                        content += '<br /><?php echo __('Tel'); ?>.: ' + marker.phone;
+                    }
+
+                    if(marker.fax !== null && marker.fax !== '')
+                    {
+                        content += '<br /><?php echo __('Fax'); ?>: ' + marker.fax;
+                    }
+                    content += '</p>';
+
+                    if(marker.email !== null && marker.email !== '')
+                    {
+                        content += '<a href="mailto:' + marker.email + '" class="result-email" title="' + marker.email + '">' + marker.email + '</a>';
+                    }
+
+                    if(marker.website !== null && marker.website !== '')
+                    {
+                        content += '<a href="' + marker.website + '" class="result-website" target="_blank" title="<?php echo __('see more'); ?>"><?php echo __('see more'); ?></a>';
+                    }
+
+                    content += '</div>';
+
+                    $scope.map.setCenter(opts.position);
+
+                    if($scope.infoWindow)
+                    {
+                        $scope.infoWindow.close();
+                    }
+
+                    $scope.infoWindow = new google.maps.InfoWindow({content: content});
+                    $scope.infoWindow.open($scope.map, marker);
+                }
+            });
+
+            $scope.helper.markers[marker.id] = marker;
+            $scope.markerClusterer.addMarker(marker);
+        };
+
+        $scope.searchInStores = function()
+        {
+            if($scope.infoWindow)
+            {
+                $scope.infoWindow.close();
+            }
+            if($scope.search.length > 0)
+            {
+                $scope.allAdded = false;
+                var search = $scope.search.toLowerCase();
+                var bounds = new google.maps.LatLngBounds();
+                var found = 0;
+                var lastStore;
+                var currentCounter,
+                    additionalCounter;
+
+                $scope.markerClusterer.clearMarkers();
+                angular.forEach($scope.helper.markers, function(store, key)
+                {
+                    var visibleBefore = store.visible;
+                    currentCounter = $scope.getCurrentCounter(store);
+                    additionalCounter = $scope.getAdditionalCounter(store);
+                    store.visible =
+                        store.name.toLowerCase().indexOf(search) !== -1 ||
+                        (store.address !== null && store.address.toLowerCase().indexOf(search) !== -1) ||
+                        (store.city !== null && store.city.toLowerCase().indexOf(search) !== -1) ||
+                        (store.country !== null && store.country.toLowerCase().indexOf(search) !== -1);
+
+                    if(store.visible)
+                    {
+                        $scope.markerClusterer.addMarker($scope.helper.markers[key]);
+                        bounds.extend(store.getPosition());
+                        found++;
+                        lastStore = store;
+                        if(!visibleBefore)
+                        {
+                            if(currentCounter)
+                            {
+                                currentCounter.count++;
+                            }
+                            if(additionalCounter)
+                            {
+                                additionalCounter.count++;
+                            }
+                        }
+                    }
+                    else if(visibleBefore)
+                    {
+                        if(currentCounter)
+                        {
+                            currentCounter.count--;
+                        }
+                        if(additionalCounter)
+                        {
+                            additionalCounter.count--
+                        }
+                    }
+                });
+                if(found > 0)
+                {
+                    $scope.noResults = false;
+                    if(found === 1)
+                    {
+                        $scope.centerOnMarker(lastStore);
+                    }
+                    else
+                    {
+                        $scope.map.fitBounds(bounds);
+                    }
+                }
+                else
+                {
+                    $scope.noResults = true;
+                    $scope.setCenterPosition();
+                }
+            }
+            else
+            {
+                $scope.noResults = false;
+                $scope.addAllMarkers();
+            }
+        };
+
+        $scope.addAllMarkers = function()
+        {
+            if(!$scope.allAdded)
+            {
+                angular.forEach($scope.helper.markers, function(store, key)
+                {
+                    store.visible = true;
+                    $scope.markerClusterer.addMarker($scope.helper.markers[key]);
+                });
+
+                $scope.allAdded = true;
+                $scope.resetCounters();
+                $scope.setCenterPosition();
+            }
+        };
+
+        $scope.centerOnMarker = function(marker)
+        {
+            if($scope.infoWindow)
+            {
+                $scope.infoWindow.close();
+            }
+            $scope.map.setCenter(marker.getPosition());
+            $scope.map.setZoom(parseInt(marker.zoom));
+        };
+
+        $scope.setCenterPosition = function()
+        {
+            var center = new google.maps.LatLng(
+                $scope.helper.basePosition.center.lat,
+                $scope.helper.basePosition.center.lng
+            );
+
+            $scope.map.setCenter(center);
+            $scope.map.setZoom($scope.helper.basePosition.zoom);
+        };
+
+        $scope.searchChange = function()
+        {
+            if(!angular.isUndefined(searchTimeout))
+            {
+                $timeout.cancel(searchTimeout);
+            }
+            searchTimeout = $timeout($scope.searchInStores, 300);
+        };
+
+        $scope.searchKeyPress = function(e)
+        {
+            if (e.which == 13)
+            {
+                $scope.searchInStores();
+            }
+        };
+
+        $scope.resetCounters = function()
+        {
+            <?php switch($block->getGroupStoresBy()):
+                    case GroupBy::COUNTRY:
+                    case GroupBy::CATEGORY:
+                ?>
+                angular.forEach($scope.storesGrouped, function(elem)
+                {
+                    elem['count'] = elem['count_all'];
+                });
+                <?php break; ?>
+                <?php
+                    case GroupBy::COUNTRY_CATEGORY:
+                    case GroupBy::CATEGORY_COUNTRY:
+                ?>
+                angular.forEach($scope.storesGrouped, function(nested)
+                {
+                    nested['count'] = nested['count_all'];
+                    angular.forEach(nested.elements, function(elem)
+                    {
+                        elem['count'] = elem['count_all'];
+                    });
+                });
+                <?php break; ?>
+            <?php endswitch; ?>
+        };
+
+        $scope.getCurrentCounter = function(store)
+        {
+            <?php switch($block->getGroupStoresBy()):
+                case GroupBy::COUNTRY:
+                case GroupBy::COUNTRY_CATEGORY:
+            ?>
+                return $scope.storesGrouped[store.country_code];
+            <?php break; ?>
+            <?php
+                case GroupBy::CATEGORY:
+                case GroupBy::CATEGORY_COUNTRY:
+            ?>
+                return $scope.storesGrouped[store.category_id];
+            <?php break; ?>
+            <?php
+                default:
+            ?>
+                return false;
+            <?php break; ?>
+            <?php endswitch; ?>
+        };
+
+        $scope.getAdditionalCounter = function(store)
+        {
+            <?php switch($block->getGroupStoresBy()):
+                case GroupBy::COUNTRY_CATEGORY:
+            ?>
+                return $scope.storesGrouped[store.country_code]['elements'][store.category_id];
+            <?php break; ?>
+            <?php
+                case GroupBy::CATEGORY_COUNTRY:
+            ?>
+                return $scope.storesGrouped[store.category_id]['elements'][store.country_code];
+            <?php break; ?>
+            <?php
+                default:
+            ?>
+                return false;
+            <?php break; ?>
+            <?php endswitch; ?>
+        }
+    });
+
+    mapModule.directive('store', function()
+    {
+        return {
+            restrict: 'E',
+            templateUrl: '<?php echo $block->getViewFileUrl('Brainvire_StoreLocator::js/template/store.html'); ?>',
+            scope: {
+                store: '=',
+                centerOnMarker: '&',
+                langs: '='
+            }
+        }
+    });
+</script>
+<script src="https://maps.googleapis.com/maps/api/js?key=<?php echo $block->getGoogleApiKey(); ?>"></script>
+<?php endif; ?>

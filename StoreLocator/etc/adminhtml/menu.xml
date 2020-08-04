@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Backend:etc/menu.xsd">
+    <menu>
+        <add id="Brainvire_StoreLocator::storelocator" title="Store Locator" translate="title" module="Brainvire_StoreLocator" sortOrder="50"  resource="Brainvire_StoreLocator::configuration" />
+        <add id="Brainvire_StoreLocator::configuration" title="Configuration" translate="title" module="Brainvire_StoreLocator" sortOrder="10" parent="Brainvire_StoreLocator::storelocator" action="adminhtml/system_config/edit/section/storelocator" resource="Brainvire_StoreLocator::configuration" />
+       <!--  <add id="Brainvire_StoreLocator::categories" title="Categories" translate="title" module="Brainvire_StoreLocator" sortOrder="20" parent="Brainvire_StoreLocator::storelocator" action="storelocator/categories" resource="Brainvire_StoreLocator::categories" /> -->
+        <add id="Brainvire_StoreLocator::stores_list" title="Stores" translate="title" module="Brainvire_StoreLocator" sortOrder="30" parent="Brainvire_StoreLocator::storelocator" action="storelocator/stores" resource="Brainvire_StoreLocator::stores" />
+    </menu>
+</config>

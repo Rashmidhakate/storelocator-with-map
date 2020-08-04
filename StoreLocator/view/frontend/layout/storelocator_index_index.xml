@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" layout="1column" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <head>
+        <link src="Brainvire_StoreLocator::angular/angular.min.js" />
+        <link src="Brainvire_StoreLocator::js/markerclusterer.js" />
+    </head>
+    <body>
+        <referenceBlock name="brainvire-storelocator-link">
+            <arguments>
+                <argument name="current" xsi:type="boolean">true</argument>
+            </arguments>
+        </referenceBlock>
+        <referenceContainer name="content">
+            <block class="Brainvire\StoreLocator\Block\StoresList" name="storelocator.stores.store" template="Brainvire_StoreLocator::store.phtml" />
+             <!-- <block class="Brainvire\StoreLocator\Block\StoresList" name="storelocator.stores.list" template="Brainvire_StoreLocator::list.phtml" /> -->
+        </referenceContainer>
+    </body>
+</page>

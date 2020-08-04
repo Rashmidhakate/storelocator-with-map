@@ -1,0 +1,606 @@
+<?php
+
+/**
+ * @var \Brainvire\StoreLocator\Block\StoresList $block
+ * @codingStandardsIgnoreFile
+ */
+
+use \Brainvire\StoreLocator\Model\Config\Source\GroupBy;
+$googleApiKey = $block->getGoogleApiKey();
+?>
+
+
+<?php if($googleApiKey === null): ?>
+<p class="message-error error message">
+    <span><?php echo __('Google Api Key is not set!'); ?></span>
+</p>
+<?php else: ?>
+<div class="store-locator-module">
+    <div ng-app="brainvireMapsApp">
+        <div ng-controller="mapController" ng-init="init()">
+            <div class="map-container">
+            <div class="store-locator-navigation">
+
+
+
+        <?php 
+        $moduleurl = $block->getModuleUrl(); 
+        $currentStore = $block->getStoreId();
+        $countryid= $block->getPasscountryid();
+        $cityid = $block->getPasscityid();
+        $collection = $block->getStoreCollect();
+        $countrycollection = $block->getCountryListByStoreId($currentStore);
+        $countrytemp = array_unique(array_column($countrycollection, 'country_code'));
+        $countryunique_arr = array_intersect_key($countrycollection, $countrytemp);
+
+        //print_r($countryunique_arr);
+
+        ?>
+        <div class="title-store">FIND A STORE</div>
+        <div class="countryselection">
+        <label>Country</label>
+        
+            <select name="country" onchange="this.options[this.selectedIndex].value && (window.location = this.options[this.selectedIndex].value);">
+                
+                <option value="<?php echo $moduleurl ?>">All</option>
+                <?php
+                    foreach ($countryunique_arr as $countryname) 
+                    {
+                        ?>
+                        <option value="<?php echo $moduleurl.'?countryid='.$countryname['country_code']?>"  <?php if($countryname['country_code'] == $countryid) { echo "selected";}?>>
+                            <?php echo $countryname['country']?>
+                        </option>
+                      <?php  
+                    }
+                ?>
+            </select>
+        </div>
+
+            <div class="cityselection">
+                <label>City </label>
+            <?php
+            $citycollection = $block->getCityList($currentStore);
+            $citytemp = array_unique(array_column($citycollection, 'city'));
+            $cityunique_arr = array_intersect_key($citycollection, $citytemp);
+
+            $citybyidcollection = $block->getCityListById($countryid,$currentStore);
+            $citybyidtemp = array_unique(array_column($citybyidcollection, 'city'));
+            $citybyidunique_arr = array_intersect_key($citybyidcollection, $citybyidtemp);
+
+            if($countryid == "")
+               {
+                ?>
+                <select name="city" onchange="this.options[this.selectedIndex].value && (window.location = this.options[this.selectedIndex].value);">
+                        
+                        <option value="<?php echo $moduleurl ?>">All</option>
+                        <?php
+                            foreach ($cityunique_arr as $cityname) 
+                            {
+                                ?>
+                                <option value="<?php echo $moduleurl.'?countryid='.$countryid."&cityid=".$cityname['city']?>" <?php if($cityname['city'] == $cityid) { echo "selected";}?>>
+                                    <?php echo $cityname['city']?>
+                                </option>
+                              <?php  
+                            }
+                        ?>
+                </select>
+                <?php
+               }
+               else
+               {
+                    ?>
+                    <select name="city" onchange="this.options[this.selectedIndex].value && (window.location = this.options[this.selectedIndex].value);">
+                            
+                            <option value="<?php echo $moduleurl ?>">All</option>
+                            <?php
+                                foreach ($citybyidunique_arr as $citybyidname) 
+                                {
+                                    ?>
+                                    <option value="<?php echo $moduleurl.'?countryid='.$countryid."&cityid=".$citybyidname['city']?>"  <?php if($citybyidname['city'] == $cityid) { echo "selected";}?>>
+                                        <?php echo $citybyidname['city']?>
+                                    </option>
+                                  <?php  
+                                }
+                            ?>
+                    </select>
+                <?php
+               }
+           ?>
+            </div>
+           
+
+
+
+<div class="tab">
+  <button class="tablinks active" onclick="openTab(event, 'LocationTab')">Location</button>
+  <button class="tablinks" onclick="openTab(event, 'NameTab')">Name</button>
+</div>
+
+
+<div id="LocationTab" class="tabcontent">
+
+    <div class="store-locator-results">
+        <div ng-repeat="(key, store) in helper.markers">
+            <loc store="store" center-on-marker="centerOnMarker" langs="helper.langs" ng-hide="!store.visible"></loc>
+        </div>
+    </div>
+ <?php
+           
+
+          /*
+           
+            $locationcollection = $block->getLocationList($currentStore);
+            $locationtemp = array_unique(array_column($locationcollection, 'location'));
+            $locationunique_arr = array_intersect_key($locationcollection, $locationtemp);
+
+            $locationbyidcollection = $block->getLocationListById($countryid,$cityid,$currentStore);
+            $locationbyidtemp = array_unique(array_column($locationbyidcollection, 'location'));
+            $locationbyidunique_arr = array_intersect_key($locationbyidcollection, $locationbyidtemp);
+
+
+            if($countryid == "" )
+               {
+                ?>
+                <div name="location" >
+                        
+                     
+                       <?php
+                            foreach ($locationunique_arr as $locationname) 
+                            {
+                                ?>
+                                <a onclick="jump()">
+                                    <?php echo $locationname['location']?>
+                                </a>
+                              <?php  
+                            }
+                        ?>
+                </div>
+                <?php
+               }
+               else
+               {
+                    ?>
+                    <div name="location">
+                            
+                            
+                            <?php
+                                foreach ($locationbyidunique_arr as $locationbyidname) 
+                                {
+                                    ?>
+                                    <a onclick="jump()">
+                                        <?php echo $locationbyidname['location']?>
+                                   </a>
+                                  <?php  
+                                }
+                            ?>
+                    </div>
+                <?php
+               }
+            */
+           ?>
+
+</div>
+
+<div id="NameTab" class="tabcontent">
+ 
+                        <div class="store-locator-results">
+                            <div ng-repeat="(key, store) in helper.markers">
+                                <store store="store" center-on-marker="centerOnMarker" langs="helper.langs" ng-hide="!store.visible"></store>
+                            </div>
+                        </div>
+           <?php
+           /*
+            $namecollection = $block->getNameList($currentStore);
+            $nametemp = array_unique(array_column($namecollection, 'name'));
+            $nameunique_arr = array_intersect_key($namecollection, $nametemp);
+
+            $namebyidcollection = $block->getNameListById($countryid,$cityid,$currentStore);
+            $namebyidtemp = array_unique(array_column($namebyidcollection, 'name'));
+            $namebyidunique_arr = array_intersect_key($namebyidcollection, $namebyidtemp);
+
+
+            if($countryid == "")
+               {
+                ?>
+                <div name="name" >
+                        
+                     
+                       <?php
+                            foreach ($nameunique_arr as $name) 
+                            {
+                                ?>
+                                <p>
+                                    <?php echo $name['name']?>
+                                </p>
+                              <?php  
+                            }
+                        ?>
+                </div>
+                <?php
+               }
+               else
+               {
+                    ?>
+                    <div name="location">
+                            
+                            
+                            <?php
+                                foreach ($namebyidunique_arr as $namebyidname) 
+                                {
+                                    ?>
+                                   <p>
+                                        <?php echo $namebyidname['name']?>
+                                   </p>
+                                  <?php  
+                                }
+                            ?>
+                    </div>
+                <?php
+               }
+*/
+           ?>
+</div>
+              
+                
+
+                
+            </div>
+        </div>
+            <div id="map-container" class="store-locator-map"></div>
+        </div>
+    </div>
+</div>
+<?php
+
+$storeid  = $block->getStoreId();
+$countryid= $block->getPasscountryid();
+$fjson = $block->getStoresJson($storeid);
+$sjson = $block->getStoresJsonById($countryid,$storeid);
+
+if($countryid != "")
+{
+$sarr = $block->getStoresById($countryid,$storeid);
+
+$minarr = [];
+    foreach ($sarr as $newsarr) 
+        {
+            $resultlat['lat'] = $newsarr['lat'];
+            $minarr[]=  $resultlat;                   
+        }
+$numbers = array_column($minarr, 'lat');
+$min = min($numbers);
+$max = max($numbers);
+}
+else
+{
+   $farr = $block->getStores($storeid);
+
+    $minarr1 = [];
+    foreach ($farr as $newsarr) 
+        {
+            $resultlat['lat'] = $newsarr['lat'];
+            $minarr1[]=  $resultlat;                   
+        } 
+ $numbers1 = array_column($minarr1, 'lat');
+$min1 = min($numbers1);
+$max1 = max($numbers1);       
+}
+
+
+
+//print_r($min);    
+                           
+?>
+<?php $marker = $block->getViewFileUrl('images/icon-map-pointer-new.png') ?>
+<script>
+function openTab(evt, cityName) {
+  var i, tabcontent, tablinks;
+  tabcontent = document.getElementsByClassName("tabcontent");
+  for (i = 0; i < tabcontent.length; i++) {
+    tabcontent[i].style.display = "none";
+  }
+  tablinks = document.getElementsByClassName("tablinks");
+  for (i = 0; i < tablinks.length; i++) {
+    tablinks[i].className = tablinks[i].className.replace(" active", "");
+  }
+  document.getElementById(cityName).style.display = "block";
+  evt.currentTarget.className += " active";
+}
+
+    var mapModule = angular.module('brainvireMapsApp', []);
+   
+
+    var storeid  = '<?php echo $block->getStoreId(); ?>';
+    var countryid= '<?php echo $block->getPasscountryid(); ?>';
+
+    if(countryid == "")
+    {
+          var stores = angular.fromJson('<?php echo $fjson; ?>');
+
+         // console.log(stores);
+
+    }
+    else
+    {
+          var stores = angular.fromJson('<?php echo $sjson; ?>');
+    }
+  
+    //console.log(stores);
+
+    mapModule.factory('helper', function()
+    {
+
+        return {
+            markers: {},           
+            basePosition : {
+                center: {
+                    lat: 24.474306,
+                    lng: 54.350972
+                },
+                zoom: 16
+            },
+            langs: {
+                tel: '<?php echo __('Tel'); ?>',
+                fax: '<?php echo __('Fax'); ?>',
+                name: '<?php echo __('Fax'); ?>',
+                address: '<?php echo __('Address'); ?>',
+                
+            }
+        }
+    });
+
+    mapModule.controller('mapController', function($scope, $http, $timeout, helper)
+    {
+        
+
+        $scope.helper = helper;
+        $scope.storesGrouped = {};
+
+        $scope.noResults = false;
+        $scope.allAdded = true;
+
+        $scope.search = '';
+        $scope.infoWindow = false;
+
+        $scope.init = function()
+        {
+           
+
+            $scope.map = new google.maps.Map(document.getElementById('map-container'), $scope.helper.basePosition);
+            $scope.markerClusterer = new MarkerClusterer($scope.map, [],
+                );
+
+            if(stores.length > 0)
+            {
+                angular.forEach(stores, function(store)
+                {
+                   
+                   
+                        var opts = {
+                        position: {
+                            lat: parseFloat(store.lat),
+                            lng: parseFloat(store.lng)
+                        },
+                        map: $scope.map,
+                        zoom: store.zoom,
+                        id: store.store_id,
+                        name: store.name,
+                        location: store.location,
+                        lat: store.lat,
+                        lng: store.lng,
+                        working_to:store.working_to,
+                        country: store.country,
+                        country_code: store.country_code,
+                        address: store.address,
+                        city: store.city,
+                        postcode: store.postcode,
+                        website: store.website,
+                        phone: store.phone,
+                        fax: store.fax,
+                        email: store.email,
+                        store_ids: store.store_ids,
+                        visible: true
+                        };
+                    $scope.newMarker(opts);
+                });
+            }
+        };
+
+        $scope._on = function(opts)
+        {
+            var self = this;
+
+            google.maps.event.addListener(opts.obj, opts.event, function(e)
+            {
+                opts.callback.call(self, e);
+            });
+        };
+
+        $scope.newMarker = function(opts)
+        {
+            var marker = new google.maps.Marker(opts);
+
+            marker.setIcon('<?php echo $block->getViewFileUrl('images/icon-map-pointer-new.png'); ?>');
+
+
+            $scope._on({
+                obj: marker,
+                event: 'click',
+                callback: function()
+                {
+
+                    var content =
+                        '<div class="store-locator-popup">' +
+                        '<h4 class="result-name">' + marker.name + '</h4>' +
+                        '<p class="result-address">';
+
+                    if(marker.address !== null && marker.address !== '')
+                    {
+                          content +=  '<span class="left"><b><?php echo __('Address'); ?>: </b></span>' + ": " + marker.address;
+                    }
+
+                    if(marker.phone !== null && marker.phone !== '')
+                    {
+                        content += '<br /><span class="left"><b><?php echo __('Tel'); ?>: </b></span>' + ": " + marker.phone;
+                    }
+                    if(marker.working_to !== null && marker.working_to !== '')
+                    {
+                        content += '<br /><span class="left"><b><?php echo __('Working Time'); ?>: </b></span>' + ": " + marker.working_to;
+                    }
+
+                    if(marker.fax !== null && marker.fax !== '')
+                    {
+                        content += '<br /><span class="left"><b><?php echo __('Fax'); ?>:</b></span> ' + ": " + marker.fax; 
+                    }
+                    content += '</p>';
+
+
+                    if(marker.lat !== '' && marker.lng !== '')
+                    {
+                        content += '<a class="direction-link" target="_blank" href="https://www.google.com/maps/place/'+ marker.lat +','+ marker.lng +'">Directions</a>';
+                    }
+
+                    content += '</div>';
+
+                    $scope.map.setCenter(opts.position);
+
+                    if($scope.infoWindow)
+                    {
+                        $scope.infoWindow.close();
+                    }
+
+                    $scope.infoWindow = new google.maps.InfoWindow({content: content});
+                    $scope.infoWindow.open($scope.map, marker);
+                }
+            });
+
+            $scope.helper.markers[marker.id] = marker;
+            $scope.markerClusterer.addMarker(marker);
+           
+            
+        };
+
+       
+
+        $scope.addAllMarkers = function()
+        {
+            if(!$scope.allAdded)
+            {
+                angular.forEach($scope.helper.markers, function(store, key)
+                {
+                    store.visible = true;
+                    $scope.markerClusterer.addMarker($scope.helper.markers[key]);
+                });
+
+                $scope.allAdded = true;
+                $scope.resetCounters();
+                $scope.setCenterPosition();
+            }
+        };
+
+        $scope.centerOnMarker = function(marker)
+        {
+            if($scope.infoWindow)
+            {
+                $scope.infoWindow.close();
+            }
+            $scope.map.setCenter(marker.getPosition());
+            //$scope.map.setZoom(parseInt(marker.zoom));
+
+            var content =
+                        '<div class="store-locator-popup">' +
+                        '<h4 class="result-name">' + marker.name + '</h4>' +
+                        '<p class="result-address">';
+
+                    if(marker.address !== null && marker.address !== '')
+                    {
+                        content +=  '<span class="left"><b><?php echo __('Address'); ?></b></span>' + ": " + marker.address ;
+                    }
+
+                    if(marker.phone !== null && marker.phone !== '')
+                    {
+                        content += '<br /><span class="left"><b><?php echo __('Tel'); ?> </b></span>' + ": " + marker.phone;
+                    }
+                    if(marker.working_to !== null && marker.working_to !== '')
+                    {
+                        content += '<br /><span class="left"><b><?php echo __('Working Time'); ?> </b></span>' + ": " + marker.working_to;
+                    }
+
+                    if(marker.fax !== null && marker.fax !== '')
+                    {
+                        content += '<br /><span class="left"><b><?php echo __('Fax'); ?> </b></span>' + ": " + marker.fax;
+                    }
+                    content += '</p>';
+
+
+                    if(marker.lat !== '' && marker.lng !== '')
+                    {
+                         content += '<a class="direction-link" target="_blank" href="https://www.google.com/maps/place/'+ marker.lat +','+ marker.lng +'">Directions</a>';
+                    }
+
+                    content += '</div>';
+
+                   
+                    if($scope.infoWindow)
+                    {
+                        $scope.infoWindow.close();
+                    }
+
+                    $scope.infoWindow = new google.maps.InfoWindow({content: content});
+                    $scope.infoWindow.open($scope.map, marker);
+
+        };
+
+        $scope.setCenterPosition = function()
+        {
+            var center = new google.maps.LatLng(
+                $scope.helper.basePosition.center.lat,
+                $scope.helper.basePosition.center.lng
+            );
+
+            $scope.map.setCenter(center);
+            $scope.map.setZoom($scope.helper.basePosition.zoom);
+
+           
+        };
+
+    });
+
+
+    mapModule.directive('store', function()
+    {
+        
+        return {
+            restrict: 'E',
+            templateUrl: '<?php echo $block->getViewFileUrl('Brainvire_StoreLocator::js/template/store.html'); ?>',
+            scope: {
+                store: '=',
+                centerOnMarker: '&',
+                langs: '='
+            }
+        }
+    });
+     mapModule.directive('loc', function()
+    {
+        
+        return {
+            restrict: 'E',
+            templateUrl: '<?php echo $block->getViewFileUrl('Brainvire_StoreLocator::js/template/loc.html'); ?>',
+            scope: {
+                store: '=',
+                centerOnMarker: '&',
+                langs: '='
+            }
+        }
+    });
+
+function clearPredictedMarkers() {
+  setAllMapPredicted(null, markersPredicted);
+  markersPredicted = [];
+}
+</script>
+<script src="https://maps.googleapis.com/maps/api/js?key=<?php echo $block->getGoogleApiKey(); ?>"></script>
+<?php endif; ?>
+<style>
+
+</style>
